@@ -45,6 +45,16 @@ var TSDemuxerWorker = function (self) {
     self.postMessage(objData, [objData.moof, objData.mdat]);
   });
 
+  observer.on(Event.FRAG_PARSING_METADATA, function(event, data) {
+    var objData = {event: event, id3Tags:data.id3Tags};
+    self.postMessage(objData);
+  });
+
+  observer.on(Event.FRAG_INIT_SEGMENT_TS_CHANGED, function(event, data) {
+    var objData = {event: event, pts: data.pts, dts: data.dts};
+    self.postMessage(objData);
+  })
+
   observer.on(Event.FRAG_PARSED, function(event) {
     self.postMessage({event: event});
   });
@@ -55,4 +65,3 @@ var TSDemuxerWorker = function (self) {
 };
 
 export default TSDemuxerWorker;
-

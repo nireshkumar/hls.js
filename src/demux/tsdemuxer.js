@@ -23,7 +23,7 @@
 
   switchLevel() {
     this.pmtParsed = false;
-    this._pmtId = this._avcId = this._aacId = -1;
+    this._pmtId = this._avcId = this._aacId = this._id3Id = -1;
     this._avcTrack = {type: 'video', sequenceNumber: 0};
     this._aacTrack = {type: 'audio', sequenceNumber: 0};
     this._avcSamples = [];
@@ -32,6 +32,7 @@
     this._aacSamples = [];
     this._aacSamplesLength = 0;
     this._initSegGenerated = false;
+    this._id3Samples = [];
   }
 
   insertDiscontinuity() {
@@ -41,7 +42,7 @@
 
   // feed incoming data to the front of the parsing pipeline
   push(data, audioCodec, videoCodec, timeOffset, cc, level, duration) {
-    var avcData, aacData, start, len = data.length, stt, pid, atf, offset;
+    var avcData, aacData, id3Data, start, len = data.length, stt, pid, atf, offset;
     this.audioCodec = audioCodec;
     this.videoCodec = videoCodec;
     this.timeOffset = timeOffset;
@@ -55,7 +56,7 @@
       this.switchLevel();
       this.lastLevel = level;
     }
-    var pmtParsed = this.pmtParsed, avcId = this._avcId, aacId = this._aacId;
+    var pmtParsed = this.pmtParsed, avcId = this._avcId, aacId = this._aacId, id3Id = this._id3Id;
     // loop through TS packets
     for (start = 0; start < len; start += 188) {
       if (data[start] === 0x47) {
@@ -96,6 +97,17 @@
               aacData.data.push(data.subarray(offset, start + 188));
               aacData.size += start + 188 - offset;
             }
+          } else if(pid === id3Id) {
+            if (stt) {
+              if (id3Data) {
+                this._parseID3PES(this._parsePES(id3Data));
+              }
+              id3Data = {data: [], size: 0};
+            }
+            if (id3Data) {
+              id3Data.data.push(data.subarray(offset, start + 188));
+              id3Data.size += (start + 188 - offset);
+            }
           }
         } else {
           if (stt) {
@@ -108,6 +120,7 @@
             pmtParsed = this.pmtParsed = true;
             avcId = this._avcId;
             aacId = this._aacId;
+            id3Id = this._id3Id;
           }
         }
       } else {
@@ -135,6 +148,10 @@
     //logger.log('nb AAC samples:' + this._aacSamples.length);
     if (this._aacSamples.length) {
       this._flushAACSamples();
+    }
+
+    if (this._id3Samples.length) {
+      this._flushId3Tags();
     }
     //notify end of parsing
     observer.trigger(Event.FRAG_PARSED);
@@ -175,6 +192,9 @@
         //logger.log('AVC PID:'  + pid);
         this._avcId = pid;
         this._avcTrack.id = pid;
+        break;
+        case 0x15:
+        this._id3Id = pid
         break;
         default:
         logger.log('unkown stream type:'  + data[offset]);
@@ -240,6 +260,13 @@
     } else {
       return null;
     }
+  }
+
+  _parseID3PES(pes) {
+    if(!this._id3Samples) {
+      this._id3Samples = [];
+    }
+    this._id3Samples.push(pes);
   }
 
   _parseAVCPES(pes) {
@@ -697,6 +724,11 @@
     });
   }
 
+  _flushId3Tags () {
+    observer.trigger(Event.FRAG_PARSING_METADATA, {id3Tags:this._id3Samples});
+    this._id3Samples = [];
+  }
+
   _ADTStoAudioConfig(data, offset, audioCodec) {
     var adtsObjectType, // :int
         adtsSampleingIndex, // :int
@@ -825,6 +857,7 @@
         // remember first PTS of this demuxing context
         this._initPTS = this._aacSamples[0].pts - this.PES_TIMESCALE * this.timeOffset;
         this._initDTS = this._aacSamples[0].dts - this.PES_TIMESCALE * this.timeOffset;
+        this.triggerInitSegmentTSChange(this._initPTS, this._initDTS);
       }
     } else
     if (this._aacId === -1) {
@@ -841,6 +874,7 @@
           // remember first PTS of this demuxing context
           this._initPTS = this._avcSamples[0].pts - this.PES_TIMESCALE * this.timeOffset;
           this._initDTS = this._avcSamples[0].dts - this.PES_TIMESCALE * this.timeOffset;
+          this.triggerInitSegmentTSChange(this._initPTS, this._initDTS);
         }
       }
     } else {
@@ -860,11 +894,16 @@
           // remember first PTS of this demuxing context
           this._initPTS = Math.min(this._avcSamples[0].pts, this._aacSamples[0].pts) - this.PES_TIMESCALE * this.timeOffset;
           this._initDTS = Math.min(this._avcSamples[0].dts, this._aacSamples[0].dts) - this.PES_TIMESCALE * this.timeOffset;
+          this.triggerInitSegmentTSChange(this._initPTS, this._initDTS);
         }
       }
     }
   }
+
+  triggerInitSegmentTSChange(pts, dts) {
+    observer.trigger(Event.FRAG_INIT_SEGMENT_TS_CHANGED,
+      {pts, dts});
+  }
 }
 
 export default TSDemuxer;
-

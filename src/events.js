@@ -25,8 +25,12 @@ export default {
   FRAG_LOADED: 'hlsFragLoaded',
   // fired when Init Segment has been extracted from fragment - data: { moov : moov MP4 box, codecs : codecs found while parsing fragment}
   FRAG_PARSING_INIT_SEGMENT: 'hlsFragParsingInitSegment',
+  // fired when initPTS and initDTS is changed - data { pts: initPTS, dts: initDTS }
+  FRAG_INIT_SEGMENT_TS_CHANGED: 'hlsFragInitSegmentTSChanged',
   // fired when moof/mdat have been extracted from fragment - data: { moof : moof MP4 box, mdat : mdat MP4 box}
   FRAG_PARSING_DATA: 'hlsFragParsingData',
+  // fired when fragment parsing metadata is completed - data { id3Samples : Array of id3 PES}
+  FRAG_PARSING_METADATA: 'hlsFragParsingMetadata',
   // fired when fragment parsing is completed - data: undefined
   FRAG_PARSED: 'hlsFragParsed',
   // fired when fragment remuxed MP4 boxes have all been appended into SourceBuffer - data: { frag : fragment object, stats : { trequest, tfirst, tload, tparsed, tbuffered, length} }

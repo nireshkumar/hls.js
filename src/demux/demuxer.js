@@ -75,6 +75,17 @@ class Demuxer {
           nb: ev.data.nb
         });
         break;
+      case Event.FRAG_PARSING_METADATA:
+        observer.trigger(Event.FRAG_PARSING_METADATA, {
+          id3Tags: ev.data.id3Tags
+        });
+        break;
+      case Event.FRAG_INIT_SEGMENT_TS_CHANGED:
+        observer.trigger(Event.FRAG_INIT_SEGMENT_TS_CHANGED, {
+          pts: ev.data.pts,
+          dts: ev.data.dts
+        });
+        break;
       default:
         observer.trigger(ev.data.event, ev.data.data);
         break;
@@ -83,4 +94,3 @@ class Demuxer {
 }
 
 export default Demuxer;
-

@@ -322,6 +322,14 @@ $(document).ready(function() {
         updateLevelInfo();
        });
 
+       hls.on(Hls.Events.FRAG_PARSING_METADATA, function(event, data) {
+         console.log("ID3 tags = ", data.id3Tags);
+       });
+
+       hls.on(Hls.Events.FRAG_INIT_SEGMENT_TS_CHANGED, function(event, data) {
+         console.log("Init Segment ts changed", data.id3Tags);
+       });
+
        hls.on(Hls.Events.ERROR, function(event,data) {
         switch(data.details) {
           case Hls.ErrorDetails.MANIFEST_LOAD_ERROR:
