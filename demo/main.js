@@ -1155,7 +1155,7 @@ function onDemoConfigChanged() {
   const baseURL = document.URL.split('?')[0]
   const permalinkURL = baseURL + `?src=${encodeURIComponent(url)}&demoConfig=${serializedDemoConfig}`
 
-  $('#StreamPermalink').html('<a href="' + permalinkURL + '">' + permalinkURL + '</a>');
+  $('#StreamPermalink').html('<a href="' + permalinkURL + '">' + encodeURIComponent(encodpermalinkURL) + '</a>');
 }
 
 function createfMP4(type) {
