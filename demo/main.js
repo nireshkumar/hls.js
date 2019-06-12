@@ -2,7 +2,7 @@ import {sortObject, copyTextToClipboard} from './demo-utils'
 
 const testStreams = require('../tests/test-streams');
 const defaultTestStreamUrl = testStreams['bbb'].url;
-const sourceURL = decodeURIComponent(getURLParam('src', defaultTestStreamUrl))
+const sourceURL = decodeURIComponent((getURLParam('src', defaultTestStreamUrl));
 
 let demoConfig = getURLParam('demoConfig', null)
 if (demoConfig) {
@@ -106,7 +106,7 @@ $(document).ready(function() {
   $('h2').append('&nbsp;<a target=_blank href=https://github.com/video-dev/hls.js/releases/tag/v' + Hls.version + '>v' + Hls.version + '</a>');
   $('#currentVersion').html('Hls version:' + Hls.version);
 
-  $('#streamURL').val(sourceURL)
+  $('#streamURL').val(sourceURL);
 
   video.volume = 0.05;
 
@@ -234,7 +234,12 @@ function loadSelectedStream() {
 
   logStatus('Loading manifest and attaching video element...');
 
-  hls.loadSource(url);
+  if (isUrl(url)) {
+    hls.loadSource(url);
+  } else {
+    logStatus("Not valid url " + url);
+    console.log("Not valid url " + url);
+  }
   hls.autoLevelCapping = levelCapping;
   hls.attachMedia(video);
 
@@ -1155,7 +1160,7 @@ function onDemoConfigChanged() {
   const baseURL = document.URL.split('?')[0]
   const permalinkURL = baseURL + `?src=${encodeURIComponent(url)}&demoConfig=${serializedDemoConfig}`
 
-  $('#StreamPermalink').html('<a href="' + permalinkURL + '">' + permalinkURL + '</a>');
+  $('#StreamPermalink').html('<a href="' + (isUrl(permalinkURL) ? permalinkURL : "") + '">' + encodeURIComponent(permalinkURL) + '</a>');
 }
 
 function createfMP4(type) {
@@ -1195,6 +1200,7 @@ function toggleTab(tabElId) {
 }
 
 function appendLog(textElId, message) {
+  // message = encodeURIComponent(message);
   const el = $('#' + textElId)
   let logText = el.text()
   if (logText.length) {
@@ -1204,7 +1210,7 @@ function appendLog(textElId, message) {
   const newMessage = timestamp + ' | ' + message
   logText += newMessage
   // update
-  el.text(logText)
+  el.text(logText);
 }
 
 function logStatus(message) {
@@ -1213,4 +1219,32 @@ function logStatus(message) {
 
 function logError(message) {
   appendLog('errorOut', message)
+}
+
+var protocolAndDomainRE = /^(?:\w+:)?\/\/(\S+)$/;
+
+var localhostDomainRE = /^localhost[\:?\d]*(?:[^\:?\d]\S*)?$/
+var nonLocalhostDomainRE = /^[^\s\.]+\.\S{2,}$/;
+
+function isUrl(string) {
+  if (typeof string !== 'string') {
+    return false;
+  }
+
+  var match = string.match(protocolAndDomainRE);
+  if (!match) {
+    return false;
+  }
+
+  var everythingAfterProtocol = match[1];
+  if (!everythingAfterProtocol) {
+    return false;
+  }
+
+  if (localhostDomainRE.test(everythingAfterProtocol) ||
+    nonLocalhostDomainRE.test(everythingAfterProtocol)) {
+    return true;
+  }
+
+  return false;
 }
